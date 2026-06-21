@@ -1,4 +1,4 @@
-import { BookOpen, TrendingUp, CheckCircle2, AlertCircle } from 'lucide-react';
+import { BookOpen, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function StudentAttendance() {

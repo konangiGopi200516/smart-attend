@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Camera, Check, ChevronRight, Fingerprint, Focus, Filter } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { ref as dbRef, set } from 'firebase/database';
@@ -143,7 +143,7 @@ export default function FaceEnrollment() {
       let isMounted = true;
       const saveToDatabase = async () => {
         try {
-          const imageUrls = [];
+          const imageUrls: string[] = [];
           
           // 1. Upload images to Firebase Storage (with a timeout)
           const uploadPromise = async () => {
@@ -191,8 +191,6 @@ export default function FaceEnrollment() {
 
   const mockStudents = useMemo(() => {
     const list: { sno: number; name: string; id: string; dept: string; section: string; year: string }[] = [];
-    const depts = ['CSE', 'ECE', 'MECH', 'EEE'];
-    const sections = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     const years = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
     
     // Array of Indian/Global names for variety

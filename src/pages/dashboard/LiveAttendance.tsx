@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera, Scan, Maximize2, AlertCircle, CheckCircle2, UserCheck, Loader2 } from 'lucide-react';
+import { Camera, Scan, Maximize2, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { ref, get } from 'firebase/database';
 import { rtdb } from '../../lib/firebase';

@@ -9,15 +9,9 @@ import { cn } from '../../lib/utils';
 export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [role, setRole] = useState<'admin' | 'faculty' | 'student'>(
+  const [role] = useState<'admin' | 'faculty' | 'student'>(
     (localStorage.getItem('smartattend_role') as any) || 'admin'
   );
-  
-  // Update local storage when role is changed via the simulator
-  const handleRoleChange = (newRole: 'admin' | 'faculty' | 'student') => {
-    setRole(newRole);
-    localStorage.setItem('smartattend_role', newRole);
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('smartattend_role');
