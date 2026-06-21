@@ -119,10 +119,131 @@ export default function Settings() {
             </div>
           )}
           
-          {/* Implement other tabs as needed or leave blank for now */}
-          {['camera', 'security', 'users'].includes(activeTab) && (
-            <div className="flex items-center justify-center h-full text-slate-500 text-sm">
-              Configuration interface for {activeTab} will appear here.
+          {activeTab === 'camera' && (
+            <div className="space-y-6 max-w-lg">
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Camera Configuration</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1.5">Default Resolution</label>
+                    <select className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-sm outline-none focus:border-primary/50 text-white appearance-none">
+                      <option>720p (Performance)</option>
+                      <option selected>1080p (Balanced)</option>
+                      <option>4K (High Accuracy)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1.5">Capture Frame Rate</label>
+                    <select className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-sm outline-none focus:border-primary/50 text-white appearance-none">
+                      <option>15 FPS</option>
+                      <option selected>30 FPS</option>
+                      <option>60 FPS</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg border border-white/5 mt-4">
+                    <div>
+                      <div className="font-medium">Hardware Acceleration</div>
+                      <div className="text-xs text-slate-400">Use GPU for faster video processing.</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" defaultChecked className="sr-only peer" />
+                      <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4">
+                <Button className="bg-primary text-white hover:bg-primary/90">
+                  <Save className="w-4 h-4 mr-2" /> Save Camera Settings
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="space-y-6 max-w-lg">
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Security & Privacy</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg border border-white/5">
+                    <div>
+                      <div className="font-medium">Two-Factor Authentication</div>
+                      <div className="text-xs text-slate-400">Require 2FA for all faculty and admin logins.</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" defaultChecked className="sr-only peer" />
+                      <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg border border-white/5">
+                    <div>
+                      <div className="font-medium">Biometric Data Encryption</div>
+                      <div className="text-xs text-slate-400">Encrypt face descriptors at rest (AES-256).</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" defaultChecked className="sr-only peer" />
+                      <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1.5 mt-4">Session Timeout (Minutes)</label>
+                    <input type="number" defaultValue="30" className="w-full bg-slate-950 border border-white/10 rounded-lg px-4 py-2 text-sm outline-none focus:border-primary/50 text-white" />
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4">
+                <Button className="bg-primary text-white hover:bg-primary/90">
+                  <Save className="w-4 h-4 mr-2" /> Update Security
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">User Management</h3>
+                <Button className="bg-primary hover:bg-primary/90 text-white text-sm py-1.5 h-auto">
+                  + Invite User
+                </Button>
+              </div>
+              
+              <div className="bg-slate-900/50 border border-white/5 rounded-xl overflow-hidden">
+                <div className="grid grid-cols-4 gap-4 p-4 border-b border-white/5 bg-slate-900/80 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <div className="col-span-2">User</div>
+                  <div>Role</div>
+                  <div>Status</div>
+                </div>
+                
+                {[
+                  { name: 'Dr. Sarah Connor', email: 'sarah.c@globaltech.edu', role: 'System Admin', status: 'Active' },
+                  { name: 'Prof. Alan Turing', email: 'alan.t@globaltech.edu', role: 'Faculty Lead', status: 'Active' },
+                  { name: 'Dr. John Smith', email: 'john.s@globaltech.edu', role: 'Faculty', status: 'Pending' },
+                ].map((user, i) => (
+                  <div key={i} className="grid grid-cols-4 gap-4 p-4 border-b border-white/5 items-center hover:bg-white/[0.02] transition-colors">
+                    <div className="col-span-2 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+                        {user.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-white">{user.name}</div>
+                        <div className="text-xs text-slate-400">{user.email}</div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-slate-300">{user.role}</div>
+                    <div>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        user.status === 'Active' ? 'bg-success/10 text-success border border-success/20' : 'bg-warning/10 text-warning border border-warning/20'
+                      }`}>
+                        {user.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
