@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Camera, Check, ChevronRight, Fingerprint, Focus, Filter } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
-import { ref as dbRef, set } from 'firebase/database';
+import { ref as dbRef, set, get } from 'firebase/database';
 import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 import { rtdb, storage } from '../../lib/firebase';
 import * as faceapi from 'face-api.js';
@@ -25,24 +25,49 @@ export default function FaceEnrollment() {
   const [hasCamera, setHasCamera] = useState(false);
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [existingDescriptors, setExistingDescriptors] = useState<{id: string, name: string, descriptor: Float32Array}[]>([]);
+  const [studentDescriptor, setStudentDescriptor] = useState<number[] | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   
   const requiredCaptures = 4;
+
+  // Fetch existing enrollments to check for duplicates
+  useEffect(() => {
+    const fetchEnrollments = async () => {
+      try {
+        const snapshot = await get(dbRef(rtdb, 'student_face_enrollment'));
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const descriptors = Object.values(data)
+            .filter((d: any) => d.descriptor)
+            .map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              descriptor: new Float32Array(d.descriptor)
+            }));
+          setExistingDescriptors(descriptors);
+        }
+      } catch (err) {
+        console.error("Error fetching enrollments:", err);
+      }
+    };
+    fetchEnrollments();
+  }, []);
 
   // Load face-api models
   useEffect(() => {
     let isMounted = true;
     const loadModels = async () => {
       try {
-        // We only need the tiny face detector for basic presence validation
-        await Promise.race([
+        await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Model load timeout')), 8000))
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceRecognitionNet.loadFromUri('/models')
         ]);
         if (isMounted) setModelsLoaded(true);
       } catch (err) {
         console.error("Failed to load models:", err);
-        // Fallback to unlock UI if AI fails to load
-        if (isMounted) setModelsLoaded(true);
+        // Do not artificially unlock UI if models fail to load, otherwise capture will throw errors
       }
     };
     loadModels();
@@ -99,10 +124,35 @@ export default function FaceEnrollment() {
       try {
         const detection = await faceapi.detectSingleFace(
           videoRef.current,
-          new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 })
-        );
+          new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.2 })
+        ).withFaceLandmarks().withFaceDescriptor();
 
         if (detection) {
+          // Check for duplicate face against other students
+          let isDuplicate = false;
+          let duplicateName = "";
+          for (const existing of existingDescriptors) {
+             if (existing.id === studentDetails.id) continue; // Skip self if re-enrolling
+             const dist = faceapi.euclideanDistance(detection.descriptor, existing.descriptor);
+             if (dist < 0.5) {
+                 isDuplicate = true;
+                 duplicateName = existing.name;
+                 break;
+             }
+          }
+          
+          if (isDuplicate) {
+             setDuplicateWarning(`Not able to register! Face already matched with ${duplicateName}.`);
+             setIsCapturing(false);
+             setCaptureCount(0);
+             setCapturedImages([]);
+             return;
+          }
+
+          if (captureCount === 0) {
+             setStudentDescriptor(Array.from(detection.descriptor));
+          }
+
           // Face detected with high confidence! Capture it.
           const canvas = document.createElement('canvas');
           canvas.width = videoRef.current.videoWidth;
@@ -164,13 +214,14 @@ export default function FaceEnrollment() {
             console.warn("Storage upload failed or timed out. Proceeding to save DB only.", storageErr);
           }
 
-          // 2. Save metadata and URLs to Realtime Database
+          // 2. Save metadata, URLs, and face descriptor to Realtime Database
           await set(dbRef(rtdb, `student_face_enrollment/${studentDetails.id}`), {
             id: studentDetails.id,
             name: studentDetails.name,
             dept: studentDetails.dept,
             section: studentDetails.section,
             faceImages: imageUrls,
+            descriptor: studentDescriptor,
             faceEncodingStatus: "Complete",
             encodedAt: new Date().toISOString()
           });
@@ -456,10 +507,20 @@ export default function FaceEnrollment() {
                 </div>
               )}
               
+              {duplicateWarning ? (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-danger/90 backdrop-blur-md px-6 py-4 rounded-xl border border-white/10 text-white font-bold text-center w-11/12 max-w-sm shadow-2xl z-20">
+                  <Fingerprint className="w-8 h-8 mx-auto mb-2 text-white opacity-80" />
+                  {duplicateWarning}
+                  <Button size="sm" className="mt-4 w-full bg-white text-danger hover:bg-white/90" onClick={() => setDuplicateWarning(null)}>Try Again</Button>
+                </div>
+              ) : null}
+              
               {/* Instruction Toast */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 text-sm font-medium whitespace-nowrap text-white">
-                {captureCount >= requiredCaptures ? "Capture Complete!" : getCurrentInstruction()}
-              </div>
+              {!duplicateWarning && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 text-sm font-medium whitespace-nowrap text-white z-10">
+                  {captureCount >= requiredCaptures ? "Capture Complete!" : getCurrentInstruction()}
+                </div>
+              )}
             </div>
 
             <div className="w-full max-w-md space-y-4">
@@ -478,11 +539,13 @@ export default function FaceEnrollment() {
                 {captureCount === 0 ? (
                   <Button 
                     className="bg-primary text-white w-full" 
-                    onClick={() => setIsCapturing(true)}
+                    onClick={() => isCapturing ? setIsCapturing(false) : setIsCapturing(true)}
                     disabled={!modelsLoaded}
                   >
                     {!modelsLoaded ? (
                       <>Loading AI Models...</>
+                    ) : isCapturing ? (
+                      <><Camera className="w-4 h-4 mr-2 animate-pulse" /> Capturing...</>
                     ) : (
                       <><Camera className="w-4 h-4 mr-2" /> Start Multi-Angle Capture</>
                     )}
